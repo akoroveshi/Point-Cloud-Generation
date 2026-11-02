@@ -1,0 +1,8 @@
+# Python >= 3.9.
+torch>=2.1
+torchvision>=0.16
+numpy>=1.24
+pillow>=10.0
+pyarrow>=14.0            # reading the HF parquet shards (prepare_data.py)
+torchmetrics>=1.2        # FID (evaluate.py)
+torch-fidelity>=0.3.0    # Inception weights used by torchmetrics' FID
