@@ -13,7 +13,7 @@ from torchvision.utils import save_image
 
 from data import NUM_CLASSES, build_dataset
 from dit import build_dit
-from flow import sample
+from flow_matching import sample
 
 
 def to_u8(x):  # [-1,1] float -> uint8

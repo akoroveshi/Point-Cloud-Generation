@@ -1,0 +1,4 @@
+__pycache__/
+runs/
+*.npy
+overfit_x/ckpt.pt

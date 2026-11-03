@@ -1,0 +1,17 @@
+checkpoint                                    train step       solver  MSE mean  worst img
+ts_students/lab_akorov/runs/overfit_x/ckpt.pt       3000      heun/50    0.0007     0.0008
+ts_students/lab_akorov/runs/overfit_x/ckpt.pt       3000     heun/200    0.0007     0.0009
+ts_students/lab_akorov/runs/overfit_x/ckpt.pt       3000     euler/50    0.0006     0.0007
+ts_students/lab_akorov/runs/overfit_x/ckpt.pt       3000    euler/200    0.0007     0.0008
+ts_students/lab_akorov/runs/overfit_v/ckpt.pt       3000      heun/50    0.0010     0.0013
+ts_students/lab_akorov/runs/overfit_v/ckpt.pt       3000     heun/200    0.0011     0.0014
+ts_students/lab_akorov/runs/overfit_v/ckpt.pt       3000     euler/50    0.0009     0.0011
+ts_students/lab_akorov/runs/overfit_v/ckpt.pt       3000    euler/200    0.0010     0.0013
+ents/lab_akorov/runs/overfit_eps_3000/ckpt.pt       3000      heun/50    0.0266     0.0555
+ents/lab_akorov/runs/overfit_eps_3000/ckpt.pt       3000     heun/200    0.0258     0.0532
+ents/lab_akorov/runs/overfit_eps_3000/ckpt.pt       3000     euler/50    0.0263     0.0557
+ents/lab_akorov/runs/overfit_eps_3000/ckpt.pt       3000    euler/200    0.0258     0.0534
+ents/lab_akorov/runs/overfit_eps_6000/ckpt.pt       6000      heun/50    0.0069     0.0134
+ents/lab_akorov/runs/overfit_eps_6000/ckpt.pt       6000     heun/200    0.0063     0.0123
+ents/lab_akorov/runs/overfit_eps_6000/ckpt.pt       6000     euler/50    0.0073     0.0141
+ents/lab_akorov/runs/overfit_eps_6000/ckpt.pt       6000    euler/200    0.0064     0.0125
