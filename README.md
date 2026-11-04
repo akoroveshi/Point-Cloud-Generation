@@ -118,12 +118,28 @@ Sampling and evaluation always use the EMA weights.
 
 ## 5. Overfitting results
 
-| prediction | steps | MSE mean | worst image |
+| step | x | v | eps |
 |---|---|---|---|
-| x | 3000 | 0.0007 | 0.0008 |
-| v | 3000 | 0.0010 | 0.0013 |
-| eps | 3000 | 0.0266 | 0.0555 |
-| eps | 6000 | 0.0069 | 0.0134 |
+| 500 | 0.2388 | 0.2395 | 0.4915 |
+| 1000 | 0.0337 | 0.0636 | 0.5725 |
+| 1500 | 0.0057 | 0.0056 | 0.2381 |
+| 2000 | 0.0018 | 0.0021 | 0.1383 |
+| 2500 | 0.0009 | 0.0013 | 0.0556 |
+| 3000 | **0.0007** | 0.0010 | 0.0229 |
+| 3500 | | | 0.0084 |
+| 4000 | | | 0.0113 |
+| 4500 | | | 0.0065 |
+| 5000 | | | 0.0041 |
+| 5500 | | | 0.0067 |
+| 6000 | | | 0.0094 |
+ 
+| | x | v | eps |
+|---|---|---|---|
+| first checkpoint with error below 0.01 | step 1500 | step 1500 | step 3500 |
+| error at step 3000 | 0.0007 | 0.0010 | 0.0229 |
+| best error seen | 0.0007 (step 3000) | 0.0010 (step 3000) | 0.0041 (step 5000) |
+| training loss at step 3000 | 0.0050 | 0.0086 | 0.0370 |
+| speed | ~42 ms/step | ~42 ms/step | ~43 ms/step |
 
 1. At step 3000 the x samples are visually identical to the training images. The cache, labels, time convention, conversions, EMA and sampler are consistent.
 2. At step 500 the samples are a mosaic of 4x4 blocks with roughly correct colors. The blocks are the patch size: each token writes its own patch, and neighbouring patches only fit together as training goes on.
