@@ -52,7 +52,7 @@ def fm_loss(model, x, y, num_classes, pred="v", loss_space="v", p_drop=0.1, t_di
 
 
 @torch.no_grad()
-def sample(model, y, num_classes, pred, shape, steps=50, cfg=1.0, method="heun", device="cuda"):
+def sample(model, y, num_classes, pred, shape, steps=50, cfg=1.0, method="heun", device="cpu", generator=None):
     """Generates images starting from pure noise at t=0.
        Steps to t=1 by following the predicted velocity (ODE solver)
     dz/dt = v(z,t) from t=0 (noise) to t=1 (data)."""
@@ -67,7 +67,6 @@ def sample(model, y, num_classes, pred, shape, steps=50, cfg=1.0, method="heun",
         if cfg == 1.0:
             return to_velocity(model(z, tb, y), z, tb, pred)
         
-        # If cfg > 1, extrapolate between a conditional and an unconditional pass to sharpen class adherence.
         zz, tt = torch.cat([z, z]), torch.cat([tb, tb])
         v = to_velocity(model(zz, tt, torch.cat([y, null])), zz, tt, pred)
         vc, vu = v.chunk(2)

@@ -11,7 +11,7 @@ import argparse
 
 import torch
 
-from flow import sample
+from flow_matching import sample
 from metrics import chamfer, class_accuracy, distribution_metrics, emd, nn_chamfer, nn_emd
 from models import build_model
 from shapes import ShapeSampler
