@@ -6,3 +6,5 @@ pillow>=10.0
 pyarrow>=14.0            # reading the HF parquet shards (prepare_data.py)
 torchmetrics>=1.2        # FID (evaluate.py)
 torch-fidelity>=0.3.0    # Inception weights used by torchmetrics' FID
+scipy>=1.10        # Hungarian matching for EMD
+matplotlib>=3.7    # plots of point clouds

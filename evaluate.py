@@ -1,68 +1,88 @@
-"""Test a trained model: class-conditional generation + FID against the ImageNet val images.
+"""Test a trained point-cloud model.
 
-  python evaluate.py --ckpt runs/x_b4/ckpt.pt --n_samples 10000 --cfg 1.5
-Note: FID needs >= ~10k generated images to be meaningful; the number is only comparable
-between runs evaluated with the same settings (resolution, n_samples, steps, cfg).
+  python evaluate.py --ckpt runs/dit_x/ckpt.pt                  # distribution metrics vs. held-out real clouds
+  python evaluate.py --ckpt runs/dit_overfit/ckpt.pt            # overfit checkpoint: error to the training clouds
+
+Normal checkpoint: generates --n_per_class clouds per shape and compares them with a fixed validation set
+(same augmentation distribution, seed 1234). A second, independent set of REAL clouds is scored the same way:
+it shows the best values a perfect generator could reach (finite-sample floor).
 """
 import argparse
 
-import numpy as np
 import torch
-from torchmetrics.image.fid import FrechetInceptionDistance
-from torchvision.utils import save_image
 
-from data import NUM_CLASSES, build_dataset
-from dit import build_dit
-from flow_matching import sample
-
-
-def to_u8(x):  # [-1,1] float -> uint8
-    return ((x * 0.5 + 0.5).clamp(0, 1) * 255).round().to(torch.uint8)
+from flow import sample
+from metrics import chamfer, class_accuracy, distribution_metrics, emd, nn_chamfer, nn_emd
+from models import build_model
+from shapes import ShapeSampler
+from train import aug_kwargs
+from viz import save_class_grid
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
-    ap.add_argument("--cache_dir", required=True, help="folder written by prepare_data.py")
-    ap.add_argument("--n_samples", type=int, default=10000)
-    ap.add_argument("--bs", type=int, default=250)
+    ap.add_argument("--n_per_class", type=int, default=64)
     ap.add_argument("--steps", type=int, default=50)
     ap.add_argument("--cfg", type=float, default=1.0)
-    ap.add_argument("--bf16", action="store_true")
+    ap.add_argument("--seeds", type=int, default=3, help="noise seeds (overfit checkpoints)")
+    ap.add_argument("--bs", type=int, default=256)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
     dev = args.device
 
     ck = torch.load(args.ckpt, map_location="cpu")
-    a = ck["args"]
-    model = build_dit(a["model"], a["img_size"], NUM_CLASSES).to(dev)
-    model.load_state_dict(ck["ema"])  # evaluate the EMA weights
+    a, names = ck["args"], ck["shapes"]
+    C = len(names)
+    sampler = ShapeSampler(names, a["n_points"], a["mode"], dev)
+    model = build_model(a["model"], C, a["dim"], a["depth"], a["heads"], a["fourier"]).to(dev)
+    model.load_state_dict(ck["ema"])  # EMA weights
     model.eval()
-    print(f"loaded {args.ckpt} (step {ck.get('step')}), pred={a['pred']}")
+    aug = aug_kwargs(a)
+    print(f"loaded {args.ckpt} (step {ck['step']}): {a['model']}, pred={a['pred']}, shapes={names}")
 
-    fid = FrechetInceptionDistance(feature=2048, normalize=False).to(dev)
-    val = build_dataset(args.cache_dir, "val", a["img_size"])
-    imgs = np.load(val.img_path, mmap_mode="r")
-    for i in range(0, val.n, 500):  # real statistics: all 50k val images
-        fid.update(torch.from_numpy(np.array(imgs[i:i + 500])).permute(0, 3, 1, 2).to(dev), real=True)
+    def generate(y, steps, method="heun", seed=0):
+        g = torch.Generator(device=dev)
+        g.manual_seed(seed)
+        out = [sample(model, y[i:i + args.bs], C, a["pred"], (len(y[i:i + args.bs]), a["n_points"], 2),
+                      steps=steps, cfg=args.cfg, method=method, device=dev, generator=g)
+               for i in range(0, len(y), args.bs)]
+        return torch.cat(out)
 
-    amp = dict(device_type=dev.split(":")[0], dtype=torch.bfloat16, enabled=args.bf16)
-    torch.manual_seed(0)
-    labels = torch.arange(args.n_samples) % NUM_CLASSES  # balanced over classes
-    first = None
-    for i in range(0, args.n_samples, args.bs):
-        y = labels[i:i + args.bs].to(dev)
-        with torch.autocast(**amp):
-            s = sample(model, y, NUM_CLASSES, a["pred"], (len(y), 3, a["img_size"], a["img_size"]),
-                       steps=args.steps, cfg=args.cfg, device=dev).float()
-        u8 = to_u8(s)
-        fid.update(u8, real=False)
-        if first is None:
-            first = u8[:32].float() / 255
-        print(f"  generated {i + len(y)}/{args.n_samples}", flush=True)
-    save_image(first, args.ckpt.replace("ckpt.pt", f"eval_cfg{args.cfg}.png"), nrow=8, padding=1)
-    print(f"FID ({args.n_samples} samples vs {val.n} val images, cfg={args.cfg}, steps={args.steps}): "
-          f"{fid.compute().item():.2f}")
+    if a["overfit"]:
+        Xo, Yo = sampler.fixed_set(1, seed=0, augment=False)
+        Xf, _ = sampler.fixed_set(1, seed=1, augment=False)
+        print(f"Chamfer floor (independent resample of the same shapes): {chamfer(Xo, Xf).mean():.5f}")
+        print(f"{'solver':>10s} {'CD mean':>10s} {'CD worst':>10s} {'EMD mean':>10s}")
+        for method in ("heun", "euler"):
+            for steps in (args.steps, 4 * args.steps):
+                cds, emds = [], []
+                for s in range(args.seeds):
+                    gen = generate(Yo, steps, method, s)
+                    cds.append(chamfer(gen, Xo).cpu()); emds.append(emd(gen, Xo))
+                cd, em = torch.stack(cds).mean(0), torch.stack(emds).mean(0)
+                print(f"{method + '/' + str(steps):>10s} {cd.mean():10.5f} {cd.max():10.5f} {em.mean():10.5f}")
+        return
+
+    ref, ry = sampler.fixed_set(args.n_per_class, seed=1234, augment=True, **aug)
+    real2, ry2 = sampler.fixed_set(args.n_per_class, seed=999, augment=True, **aug)
+    y = torch.arange(C, device=dev).repeat_interleave(args.n_per_class)
+    gen = generate(y, args.steps)
+
+    mg, per = distribution_metrics(gen, y, ref, ry, C)
+    mr, _ = distribution_metrics(real2, ry2, ref, ry, C)
+    rows = [("MMD-CD (lower better)", mg["mmd_cd"], mr["mmd_cd"]),
+            ("COV-CD (higher better)", mg["cov_cd"], mr["cov_cd"]),
+            ("1-NNA (50% ideal)", mg["nna"], mr["nna"]),
+            ("class accuracy", class_accuracy(gen, y, ref, ry), class_accuracy(real2, ry2, ref, ry)),
+            ("nearest-ref Chamfer", nn_chamfer(gen, y, ref, ry).mean().item(), nn_chamfer(real2, ry2, ref, ry).mean().item()),
+            ("nearest-ref EMD", nn_emd(gen, y, ref, ry).mean().item(), nn_emd(real2, ry2, ref, ry).mean().item())]
+    print(f"\n{args.n_per_class} clouds per class, {args.steps} Heun steps, cfg={args.cfg}")
+    print(f"{'metric':26s} {'generated':>10s} {'real vs real':>13s}")
+    for n, v, r in rows:
+        print(f"{n:26s} {v:10.4f} {r:13.4f}")
+    print("\nper-class MMD-CD: " + ", ".join(f"{n} {v:.5f}" for n, v in zip(names, per["mmd_cd"])))
+    save_class_grid(args.ckpt.replace("ckpt.pt", "eval.png"), gen.view(C, args.n_per_class, -1, 2)[:, :6].cpu(), names)
 
 
 if __name__ == "__main__":
