@@ -21,8 +21,8 @@ import time
 
 import torch
 
-from pcfm.data import DEFAULT_SHAPES, SHAPES, ShapeSampler, aug_kwargs
-from pcfm.flow import fm_loss, sample
+from pcfm.data.shapes import DEFAULT_SHAPES, SHAPES, ShapeSampler, aug_kwargs
+from pcfm.flow_matching import fm_loss, sample
 from pcfm.metrics import chamfer, nn_chamfer
 from pcfm.models import MODEL_CHOICES, build_model
 from pcfm.viz import save_class_grid, save_pair_grid

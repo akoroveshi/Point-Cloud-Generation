@@ -11,8 +11,8 @@ import os
 
 import torch
 
-from pcfm.data import ShapeSampler, aug_kwargs
-from pcfm.flow import sample
+from pcfm.data.shapes import ShapeSampler, aug_kwargs
+from pcfm.flow_matching import sample
 from pcfm.metrics import chamfer, class_accuracy, distribution_metrics, emd, nn_chamfer, nn_emd
 from pcfm.models import build_model
 from pcfm.viz import save_class_grid

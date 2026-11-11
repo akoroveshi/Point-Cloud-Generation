@@ -1,7 +1,7 @@
 """Checks for the point models. Run from the repository root:  python -m tests.test_models"""
 import torch
 
-from pcfm.flow import fm_loss
+from pcfm.flow_matching import fm_loss
 from pcfm.models import build_model
 from pcfm.models.ptv3 import ORDERS, serialize
 from pcfm.models.ptv3_dit import PointPTv3DiT
