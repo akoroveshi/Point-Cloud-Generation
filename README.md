@@ -32,7 +32,7 @@ Model sizes: `DiT-S` (12 layers, 384 wide), `B` (768), `L` (1024), `XL` (1152). 
 | file | what it does |
 |---|---|
 | `dit.py` | the DiT network (patchify, embedders, adaLN-Zero blocks, final layer, `build_dit`) |
-| `flow.py` | flow-matching loss, x / eps / v to velocity conversions, Heun/Euler sampler with CFG |
+| `flow_matching.py` | flow-matching loss, x / eps / v to velocity conversions, Heun/Euler sampler with CFG |
 | `data.py` | cached-ImageNet dataset, the 10-image overfit batch, ADM center crop |
 | `prepare_data.py` | one-time conversion of ImageNet-1k (local copy or `--stream`) to the 64x64 cache |
 | `train.py` | training loop: overfit mode or full training, EMA, val loss, sample grids, checkpoints, resume |
