@@ -21,7 +21,7 @@ from multiprocessing import Pool
 import numpy as np
 from PIL import Image
 
-from data import cache_paths, center_crop_arr
+from images.data import cache_paths, center_crop_arr
 
 CAPACITY = {"train": 1281167, "val": 50000}
 _SIZE = None

@@ -1,49 +1,37 @@
-"""Train class-conditional flow matching with DiT on ImageNet-1k"""
+"""Flow matching on 2D point-cloud shapes (overfit mode, EMA, val, resume).
+
+  # 1) pipeline check with the per-point MLP, one fixed clean cloud per shape (no augmentation)
+  python train.py --model mlp --overfit 4 --pred x --steps 3000 --out runs/mlp_overfit
+  
+  # 2) the same with the point DiT
+  python train.py --model dit --overfit 8 --pred x --steps 3000 --out runs/dit_overfit
+  
+  # 3) PTv3: base (no conditioning inside the blocks) and with DiT-style adaLN-Zero conditioning
+  python train.py --model ptv3     --overfit 8 --pred x --steps 3000 --out runs/ptv3_overfit
+  python train.py --model ptv3_dit --overfit 8 --pred x --steps 3000 --out runs/ptv3_dit_overfit
+  
+  # 4) baseline: point DiT on the full augmented toy distribution
+  python train.py --model dit --pred x --steps 30000 --out runs/dit_x
+"""
+
 import argparse
 import copy
 import os
 import time
 
 import torch
-from torch.utils.data import DataLoader
-from torchvision.utils import save_image
 
-from data import NUM_CLASSES, build_dataset, build_overfit_batch
-from dit import build_dit
-from flow_matching import fm_loss, sample
+from pcfm.data import DEFAULT_SHAPES, SHAPES, ShapeSampler, aug_kwargs
+from pcfm.flow import fm_loss, sample
+from pcfm.metrics import chamfer, nn_chamfer
+from pcfm.models import MODEL_CHOICES, build_model
+from pcfm.viz import save_class_grid, save_pair_grid
 
-from metrics import chamfer, nn_chamfer
-from models import build_model
-from shapes import DEFAULT_SHAPES, SHAPES, ShapeSampler
-from viz import save_class_grid, save_pair_grid
-
-
-def aug_kwargs(a):
-    """augmentation settings from an argparse namespace or a saved dict"""
-    a = a if isinstance(a, dict) else vars(a)
-    return dict(rot=not a["no_rot"], scale=(a["scale_min"], a["scale_max"]), trans=a["trans"], jitter=a["jitter"])
 
 @torch.no_grad()
 def ema_update(ema, model, decay):
     for pe, p in zip(ema.parameters(), model.parameters()):
         pe.lerp_(p, 1 - decay)
-
-
-@torch.no_grad()
-def val_loss(ema, Xv, Yv, args, dev, amp):
-    """Flow-matching loss of the EMA model on held-out val images (fixed t / noise via fixed seed)."""
-    devices = [torch.device(dev).index or 0] if dev.startswith("cuda") else []
-    tot, n = 0.0, 0
-    with torch.random.fork_rng(devices=devices):
-        torch.manual_seed(0)
-        for i in range(0, len(Xv), 256):
-            x, y = Xv[i:i + 256], Yv[i:i + 256]
-            with torch.autocast(**amp):
-                l = fm_loss(ema, x, y, NUM_CLASSES, args.pred, args.loss_space, 0.0,
-                            args.t_dist, args.t_mean, args.t_std)
-            tot += l.item() * len(x)
-            n += len(x)
-    return tot / n
 
 
 def main():
@@ -58,11 +46,13 @@ def main():
     ap.add_argument("--trans", type=float, default=0.3, help="max random translation per axis")
     ap.add_argument("--jitter", type=float, default=0.01, help="std of per-point Gaussian noise")
     # model
-    ap.add_argument("--model", default="dit", choices=["dit", "mlp"])
+    ap.add_argument("--model", default="dit", choices=MODEL_CHOICES)
     ap.add_argument("--dim", type=int, default=256)
     ap.add_argument("--depth", type=int, default=8)
     ap.add_argument("--heads", type=int, default=4)
     ap.add_argument("--fourier", type=int, default=8, help="number of Fourier frequencies for coordinates")
+    ap.add_argument("--patch", type=int, default=64, help="ptv3: points per attention patch")
+    ap.add_argument("--grid_res", type=int, default=32, help="ptv3: xCPE grid resolution at the first stage")
     # flow matching
     ap.add_argument("--pred", default="x", choices=["x", "eps", "v"])
     ap.add_argument("--loss_space", default="v", choices=["v", "native"])
@@ -114,7 +104,7 @@ def main():
         print(f"[data] {C} shapes: {names} | val set: {len(Xv)} clouds")
         print(f"[data] nearest-val Chamfer of REAL clouds (reference floor) = {floor:.5f}")
 
-    model = build_model(args.model, C, args.dim, args.depth, args.heads, args.fourier).to(dev)
+    model = build_model(args.model, C, args.dim, args.depth, args.heads, args.fourier, args.patch, args.grid_res).to(dev)
     ema = copy.deepcopy(model).eval().requires_grad_(False)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
     start = 0

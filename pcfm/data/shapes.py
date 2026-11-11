@@ -1,14 +1,12 @@
 """Toy 2D point-cloud dataset: basic shapes, generated on the fly.
 
 Every shape is a closed polygon (curved shapes are approximated by many vertices), normalised so that
-its largest distance from the centre is 1. 
+its largest distance from the centre is 1. A sample is N points drawn
 
-A sample is N points drawn
-  * mode="outline": uniformly along the boundary (by arc length), or
-  * mode="filled" : uniformly inside the polygon (rejection sampling),
+  * mode="outline": uniformly along the boundary (by arc length)
+  * mode="filled" : uniformly inside the polygon (rejection sampling)
+  
 then optionally augmented with a random rotation, scale, translation and per-point jitter.
-
-The points of a sample are an unordered set (i.i.d. draws, so their order carries no information).
 """
 import math
 
@@ -16,7 +14,7 @@ import numpy as np
 import torch
 
 
-# Shape definitions
+# ----------------------------------------------------------------------------- shape definitions
 def regular_polygon(n):
     a = math.pi / 2 + 2 * math.pi * np.arange(n) / n  # first vertex points up
     return np.stack([np.cos(a), np.sin(a)], 1)
@@ -69,13 +67,12 @@ SHAPES = {
 DEFAULT_SHAPES = ["triangle", "square", "rectangle", "pentagon", "hexagon", "circle", "star", "cross"]
 
 
-
-
 def normalize(v):
     v = v - (v.min(0) + v.max(0)) / 2          # centre the bounding box on the origin
     return v / np.linalg.norm(v, axis=1).max()  # largest radius = 1
 
 
+# ----------------------------------------------------------------------------- sampler
 class ShapeSampler:
     def __init__(self, shapes=None, n_points=256, mode="outline", device="cpu", oversample=16):
         shapes = list(shapes or DEFAULT_SHAPES)
@@ -95,7 +92,7 @@ class ShapeSampler:
     def num_classes(self):
         return len(self.names)
 
-    # un-augmented samples of one class
+    # canonical (un-augmented) samples of one class 
     def _sample_class(self, c, k, g):
         e, dev = self.edges[c], self.device
         if self.mode == "outline":
@@ -104,7 +101,7 @@ class ShapeSampler:
             t = ((u - (e["cum_end"][seg] - e["len"][seg])) / e["len"][seg]).unsqueeze(-1)
             return e["a"][seg] + t * (e["b"][seg] - e["a"][seg])
         
-        # filled: draw candidates in the bounding square [-1,1]^2, keep those inside
+        # filled: draw candidates in the bounding square [-1,1]^2, keep those inside (ray casting)
         M = self.n * self.oversample
         cand = torch.rand(k, M, 2, generator=g, device=dev) * 2 - 1
         px, py = cand[..., 0:1], cand[..., 1:2]
@@ -125,6 +122,7 @@ class ShapeSampler:
                 out[idx] = self._sample_class(c, len(idx), g)
         return out
 
+    # augmentation
     def augment(self, x, g=None, rot=True, scale=(0.6, 1.0), trans=0.3, jitter=0.01):
         B, dev = x.shape[0], x.device
         if rot:
@@ -138,6 +136,7 @@ class ShapeSampler:
             x = x + torch.randn(x.shape, generator=g, device=dev) * jitter
         return x
 
+    # public API
     def sample_batch(self, B, g=None, augment=True, **aug):
         y = torch.randint(0, self.num_classes, (B,), generator=g, device=self.device)
         x = self.canonical(y, g)
@@ -150,3 +149,9 @@ class ShapeSampler:
         y = torch.arange(self.num_classes, device=self.device).repeat_interleave(per_class)
         x = self.canonical(y, g)
         return (self.augment(x, g, **aug) if augment else x), y
+
+
+def aug_kwargs(a):
+    """augmentation settings from an argparse namespace or from the args dict saved in a checkpoint"""
+    a = a if isinstance(a, dict) else vars(a)
+    return dict(rot=not a["no_rot"], scale=(a["scale_min"], a["scale_max"]), trans=a["trans"], jitter=a["jitter"])

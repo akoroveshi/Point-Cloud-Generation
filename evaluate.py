@@ -4,19 +4,18 @@
   python evaluate.py --ckpt runs/dit_overfit/ckpt.pt            # overfit checkpoint: error to the training clouds
 
 Normal checkpoint: generates --n_per_class clouds per shape and compares them with a fixed validation set
-(same augmentation distribution, seed 1234). A second, independent set of REAL clouds is scored the same way:
-it shows the best values a perfect generator could reach (finite-sample floor).
+A second, independent set of REAL clouds is scored the same way: the best values a perfect generator could reach (finite-sample floor).
 """
 import argparse
+import os
 
 import torch
 
-from flow_matching import sample
-from metrics import chamfer, class_accuracy, distribution_metrics, emd, nn_chamfer, nn_emd
-from models import build_model
-from shapes import ShapeSampler
-from train import aug_kwargs
-from viz import save_class_grid
+from pcfm.data import ShapeSampler, aug_kwargs
+from pcfm.flow import sample
+from pcfm.metrics import chamfer, class_accuracy, distribution_metrics, emd, nn_chamfer, nn_emd
+from pcfm.models import build_model
+from pcfm.viz import save_class_grid
 
 
 def main():
@@ -31,11 +30,11 @@ def main():
     args = ap.parse_args()
     dev = args.device
 
-    ck = torch.load(args.ckpt, map_location="cpu")
+    ck = torch.load(args.ckpt, map_location="cpu", weights_only=False)
     a, names = ck["args"], ck["shapes"]
     C = len(names)
     sampler = ShapeSampler(names, a["n_points"], a["mode"], dev)
-    model = build_model(a["model"], C, a["dim"], a["depth"], a["heads"], a["fourier"]).to(dev)
+    model = build_model(a["model"], C, a["dim"], a["depth"], a["heads"], a["fourier"], a.get("patch", 64), a.get("grid_res", 32), a.get("cond")).to(dev)
     model.load_state_dict(ck["ema"])  # EMA weights
     model.eval()
     aug = aug_kwargs(a)
@@ -82,7 +81,7 @@ def main():
     for n, v, r in rows:
         print(f"{n:26s} {v:10.4f} {r:13.4f}")
     print("\nper-class MMD-CD: " + ", ".join(f"{n} {v:.5f}" for n, v in zip(names, per["mmd_cd"])))
-    save_class_grid(args.ckpt.replace("ckpt.pt", "eval.png"), gen.view(C, args.n_per_class, -1, 2)[:, :6].cpu(), names)
+    save_class_grid(os.path.splitext(args.ckpt)[0] + "_eval.png", gen.view(C, args.n_per_class, -1, 2)[:, :6].cpu(), names)
 
 
 if __name__ == "__main__":

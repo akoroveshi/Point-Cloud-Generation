@@ -12,9 +12,9 @@ import os
 import torch
 from torchvision.utils import save_image
 
-from data import NUM_CLASSES, build_dataset, build_overfit_batch
-from dit import build_dit
-from flow_matching import sample
+from images.data import NUM_CLASSES, build_dataset, build_overfit_batch
+from pcfm.models.dit import build_dit
+from pcfm.flow_matching import sample
 
 def main():
     ap = argparse.ArgumentParser()

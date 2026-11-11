@@ -175,4 +175,4 @@ def build_dit(name, img_size, num_classes):
     size, patch = name.replace("DiT-", "").split("/")
     depth, dim, heads = DIT_CFG[size]
     return DiT(img_size=img_size, patch=int(patch), dim=dim, depth=depth, heads=heads,
-               num_classes=num_classes)
+               num_classes=num_classes)# Point-cloud generation with flow matching
