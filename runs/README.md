@@ -8,6 +8,7 @@
 | `ptv3_10k_*` | base PTv3, patch 64 | added once to the input features | 10.82M |
 | `ptv3_dit_10k_*` | PTv3, patch 64 | adaLN-Zero in every block and the head | 15.09M |
 | `ptv3_dit_10k_256_*` | PTv3, patch 256 (global attention at every stage) | adaLN-Zero in every block and the head | 15.09M |
+| `ptv3_dit_30k_256_v` | PTv3, patch 256, 30,000 steps | adaLN-Zero in every block and the head | 15.09M |
 
 Evaluation: 128 clouds per class, 50 Heun steps, cfg=1.0. The "real vs real" column is the same for every run an independent set of real clouds scored against the reference set.
 
@@ -43,6 +44,9 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_x/ckpt.pt (ste
 |circle    | 0.00896 | 0.00859 | 0.00787 | **0.00714** |
 |star      | 0.01674 | 0.01662 | 0.01233 | **0.01200** |
 |cross     | 0.02215 | 0.02100 | 0.01904 | **0.01788** |
+
+![DiT 30k steps on x](Point-Cloud-Generation/runs/visual/dit_30k_x.gif)
+![PTv3 + DiT 10k steps (256 patch) on x](Point-Cloud-Generation/runs/visual/ptv3_dit_10k_256_x.gif)
 
 - adaLN conditioning in the blocks (ptv3_10k → ptv3_dit_10k) lowers MMD-CD from 0.0148 to 0.0121 and raises class accuracy from 0.356 to 0.495.
 - Patch 256 changes little: MMD-CD 0.0117 against 0.0121, class accuracy 0.496 against 0.495.
@@ -85,6 +89,8 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_v/ckpt.pt (ste
 |star      | 0.01225 | 0.01496 | 0.00940 | **0.00918** | 0.00996 |
 |cross     | 0.01689 | 0.02118 | 0.01497 | 0.01364 | **0.01310** |
 
+![PTv3 + DiT 30k steps (256 patch) on v](Point-Cloud-Generation/runs/visual/ptv3_dit_30k_256_v.gif)
+
 - ptv3_dit_10k_256_v and ptv3_dit_30k_256_v are the best run in this table: MMD-CD 0.0110 (12% above real vs real), 1-NNA 0.52, class accuracy 0.72.
 - Patch 256 lowers the MMD-CD of all 8 classes compared with patch 64, and improves five of the six metrics (COV-CD is slightly lower, 0.574 against 0.581).
 - The base PTv3 is worse than the DiT in v-prediction (MMD-CD 0.0140 against 0.0126, class accuracy 0.473 against 0.561).
@@ -124,6 +130,8 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_eps/ckpt.pt (s
 |circle    | 0.01156 | 0.01559 | **0.01093** | 0.01133 |
 |star      | 0.02011 | 0.01637 | **0.01537** | 0.01577 |
 |cross     | 0.02191 | 0.02170 | 0.01972 | **0.01902** |
+
+![PTv3 + DiT 10k steps (256 patch) on eps](Point-Cloud-Generation/runs/visual/ptv3_dit_10k_256_eps.gif)
 
 - eps is the worst prediction space for all four models (MMD-CD 0.0156 to 0.0186).
 - Class accuracy is 0.25 to 0.35, against chance level 0.125 and the real-vs-real ceiling 0.74.
