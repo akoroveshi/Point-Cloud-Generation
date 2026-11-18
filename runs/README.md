@@ -1,6 +1,6 @@
 # Comparison results tables
 
-10,000 training steps, batch 128, learning rate 1e-4, EMA 0.999, 8 shapes with 256 points, same augmentation.
+10,000 training steps, random clouds with random classes, batch 128, validation: 64 per class, learning rate 1e-4, EMA 0.999, 8 shapes with 256 points, same augmentation.
 
 | run name | model | conditioning on time and class | parameters |
 |---|---|---|---|
@@ -111,3 +111,8 @@ Evaluation: 128 clouds per class, 50 Heun steps, cfg=1.0. The "real vs real" col
 - The base PTv3 is the weakest eps model (1-NNA 0.889, class accuracy 0.251).
 - Patch 256 does not change the result (MMD-CD 0.0156 against 0.0157).
 - Rectangle is the hardest class in all four runs (MMD-CD 0.0277 to 0.0349).
+
+## Sources of the measuring metrics
+[1] Achlioptas, Panos, et al. "Learning representations and generative models for 3d point clouds." International conference on machine learning. PMLR, 2018.
+
+[2] Yang, Guandao, et al. "Pointflow: 3d point cloud generation with continuous normalizing flows." 2019 IEEE/CVF International Conference on Computer Vision (ICCV). IEEE, 2019.
