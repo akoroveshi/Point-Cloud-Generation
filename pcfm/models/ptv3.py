@@ -1,6 +1,5 @@
-"""Base Point Transformer V3 (PTv3-style) for 2D point sets, in plain PyTorch (no spconv, no flash-attn package).
+"""Base Point Transformer V3
 
-PTv3 ingredients (Wu et al., 2024) as implemented here
   1. Serialization: points are sorted along space-filling curves (Z-order, Hilbert, and their transposed versions).
   2. Patch attention: the sorted sequence is cut into fixed-size patches; attention only inside a patch.
   3. Patch interaction: "Shift Order" (block i uses curve i mod 4) + "Shuffle Order" (random curve order per stage, training only).
@@ -8,16 +7,13 @@ PTv3 ingredients (Wu et al., 2024) as implemented here
   5. Pre-norm blocks (xCPE -> LN -> attention -> LN -> MLP), all with residuals.
   6. U-Net: 4 encoder stages with pooling, decoder stages with unpooling + skip connections.
 
-Differences to the original (all marked in the code):
+Additions:
   * xCPE: depthwise 3x3 conv on a dense 2D grid (scatter points -> grid, conv, gather back) instead of a 3D sparse conv.
   * Pooling: merge `stride` consecutive points along the Z-curve (fixed point count) instead of merging points in the same grid cell.
   * Inputs are 2D. Number of points per cloud must be fixed and divisible by stride**(stages-1) (256 -> 128 -> 64 -> 32).
   * LayerNorm in the pooling layers by default (pool_norm="bn" gives BatchNorm as in the paper). No drop-path.
 
-This file has NO time/class conditioning inside the blocks (the paper's PTv3 is a segmentation backbone):
-  PTv3        the backbone: (coord, feat[, c]) -> per-point features. Blocks are pluggable (`block_cls`), so ptv3_dit.py
-              reuses everything here and only swaps in conditioned blocks.
-  PointPTv3   base flow-matching network: time + class embedding is merely added to the input features.
+No time/class conditioning inside the blocks (time + class embedding is merely added to the input features)
 """
 import torch
 import torch.nn as nn
@@ -256,7 +252,6 @@ class PTv3(nn.Module):
         return h
 
 
-# ----------------------------------------------------------------------------- base generative wrapper
 class PointPTv3(nn.Module):
     """Base PTv3 as a flow-matching network: forward(x_t (B,N,2), t (B,), y (B,)) -> (B,N,2).
     Conditioning is a deliberately weak PLACEHOLDER: the time + class embedding is added to the input features only."""
