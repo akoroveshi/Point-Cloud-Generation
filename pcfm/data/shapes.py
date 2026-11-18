@@ -1,5 +1,4 @@
-"""Toy 2D point-cloud dataset: basic shapes, generated on the fly.
-
+"""Toy 2D point-cloud dataset
 Every shape is a closed polygon (curved shapes are approximated by many vertices), normalised so that
 its largest distance from the centre is 1. A sample is N points drawn
 
@@ -14,7 +13,7 @@ import numpy as np
 import torch
 
 
-# ----------------------------------------------------------------------------- shape definitions
+# shape definitions
 def regular_polygon(n):
     a = math.pi / 2 + 2 * math.pi * np.arange(n) / n  # first vertex points up
     return np.stack([np.cos(a), np.sin(a)], 1)
@@ -72,7 +71,7 @@ def normalize(v):
     return v / np.linalg.norm(v, axis=1).max()  # largest radius = 1
 
 
-# ----------------------------------------------------------------------------- sampler
+# sampler
 class ShapeSampler:
     def __init__(self, shapes=None, n_points=256, mode="outline", device="cpu", oversample=16):
         shapes = list(shapes or DEFAULT_SHAPES)
