@@ -13,17 +13,6 @@
 Evaluation: 128 clouds per class, 50 Heun steps, cfg=1.0. The "real vs real" column is the same for every run an independent set of real clouds scored against the reference set.
 
 ## PTv3 vs DiT on `x` prediction
-```bash
-python evaluate.py --ckpt $RUNS/dit10k_x/ckpt.pt            --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_10k_x/ckpt.pt          --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_dit_10k_x/ckpt.pt      --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_dit_10k_256_x/ckpt.pt  --n_per_class 128
-
-loaded /visinf/projects_students/lab_akorov/runs/dit10k_x/ckpt.pt (step 10000): dit, pred=x, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_10k_x/ckpt.pt (step 10000): ptv3, pred=x, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_x/ckpt.pt (step 10000): ptv3_dit, pred=x, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_x/ckpt.pt (step 10000): ptv3_dit, pred=x, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-```
 
 |metric|dit10k_x|ptv3_10k_x|ptv3_dit_10k_x|ptv3_dit_10k_256_x|real vs real|
 |---|---|---|---|---|---|
@@ -45,8 +34,11 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_x/ckpt.pt (ste
 |star      | 0.01674 | 0.01662 | 0.01233 | **0.01200** |
 |cross     | 0.02215 | 0.02100 | 0.01904 | **0.01788** |
 
-![DiT 30k steps on x](Point-Cloud-Generation/runs/visual/dit_30k_x.gif)
-![PTv3 + DiT 10k steps (256 patch) on x](Point-Cloud-Generation/runs/visual/ptv3_dit_10k_256_x.gif)
+## **DiT 30k steps on x**
+![DiT 30k steps on x](visual/dit_30k_x.gif)
+
+## **PTv3 + DiT 10k steps (256 patch) on x**
+![PTv3 + DiT 10k steps](visual/ptv3_dit_10k_256_x.gif)
 
 - adaLN conditioning in the blocks (ptv3_10k → ptv3_dit_10k) lowers MMD-CD from 0.0148 to 0.0121 and raises class accuracy from 0.356 to 0.495.
 - Patch 256 changes little: MMD-CD 0.0117 against 0.0121, class accuracy 0.496 against 0.495.
@@ -57,17 +49,6 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_x/ckpt.pt (ste
 
 
 ## PTv3 vs DiT on `v` prediction
-```bash
-python evaluate.py --ckpt $RUNS/dit10k_v/ckpt.pt            --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_10k_v/ckpt.pt          --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_dit_10k_v/ckpt.pt      --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_dit_10k_256_v/ckpt.pt  --n_per_class 128
-
-loaded /visinf/projects_students/lab_akorov/runs/dit10k_v/ckpt.pt (step 10000): dit, pred=v, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_10k_v/ckpt.pt (step 10000): ptv3, pred=v, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_v/ckpt.pt (step 10000): ptv3_dit, pred=v, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_v/ckpt.pt (step 10000): ptv3_dit, pred=v, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-```
 
 |metric|dit10k_v|ptv3_10k_v|ptv3_dit_10k_v|ptv3_dit_10k_256_v|ptv3_dit_30k_256_v|real vs real|
 |---|---|---|---|---|---|---|
@@ -89,7 +70,8 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_v/ckpt.pt (ste
 |star      | 0.01225 | 0.01496 | 0.00940 | **0.00918** | 0.00996 |
 |cross     | 0.01689 | 0.02118 | 0.01497 | 0.01364 | **0.01310** |
 
-![PTv3 + DiT 30k steps (256 patch) on v](Point-Cloud-Generation/runs/visual/ptv3_dit_30k_256_v.gif)
+## **PTv3 + DiT 30k steps (256 patch) on v**
+![PTv3 + DiT 30k steps (256 patch) on v](visual/ptv3_dit_30k_256_v.gif)
 
 - ptv3_dit_10k_256_v and ptv3_dit_30k_256_v are the best run in this table: MMD-CD 0.0110 (12% above real vs real), 1-NNA 0.52, class accuracy 0.72.
 - Patch 256 lowers the MMD-CD of all 8 classes compared with patch 64, and improves five of the six metrics (COV-CD is slightly lower, 0.574 against 0.581).
@@ -99,17 +81,6 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_v/ckpt.pt (ste
 
 
 ## PTv3 vs DiT on `eps` prediction
-```bash
-python evaluate.py --ckpt $RUNS/dit10k_eps/ckpt.pt            --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_10k_eps/ckpt.pt          --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_dit_10k_eps/ckpt.pt      --n_per_class 128
-python evaluate.py --ckpt $RUNS/ptv3_dit_10k_256_eps/ckpt.pt  --n_per_class 128
-
-loaded /visinf/projects_students/lab_akorov/runs/dit10k_eps/ckpt.pt (step 10000): dit, pred=eps, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_10k_eps/ckpt.pt (step 10000): ptv3, pred=eps, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_eps/ckpt.pt (step 10000): ptv3_dit, pred=eps, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_eps/ckpt.pt (step 10000): ptv3_dit, pred=eps, shapes=['triangle', 'square', 'rectangle', 'pentagon', 'hexagon', 'circle', 'star', 'cross']
-```
 
 |metric|dit10k_eps|ptv3_10k_eps|ptv3_dit_10k_eps|ptv3_dit_10k_256_eps|real vs real|
 |---|---|---|---|---|---|
@@ -131,7 +102,8 @@ loaded /visinf/projects_students/lab_akorov/runs/ptv3_dit_10k_256_eps/ckpt.pt (s
 |star      | 0.02011 | 0.01637 | **0.01537** | 0.01577 |
 |cross     | 0.02191 | 0.02170 | 0.01972 | **0.01902** |
 
-![PTv3 + DiT 10k steps (256 patch) on eps](Point-Cloud-Generation/runs/visual/ptv3_dit_10k_256_eps.gif)
+## **PTv3 + DiT 10k steps (256 patch) on eps**
+![PTv3 + DiT 10k steps (256 patch) on eps](visual/ptv3_dit_10k_256_eps.gif)
 
 - eps is the worst prediction space for all four models (MMD-CD 0.0156 to 0.0186).
 - Class accuracy is 0.25 to 0.35, against chance level 0.125 and the real-vs-real ceiling 0.74.
